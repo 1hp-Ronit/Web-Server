@@ -82,14 +82,25 @@ def build_response(
     )
     return headers.encode('utf-8') + body_bytes
 
+def parse_request(client : socket.socket) -> tuple[str, str, str, bytes]:
+    """returns method, path, headers, body"""
+    headers, body = read_request(client=client)
+    status_line = headers.split('\r\n',1)[0]
+    try: 
+        method, path, version = status_line.split(' ')
+    except ValueError:
+        raise ValueError(f"Malformed Request Line: {status_line}")
+    
+    
+
+
 
 try:
     while True:
         client, address = server.accept()
         try:
-            headers_raw, body = read_request(client=client)
-            print(headers_raw)
-        
+            method, path, headers, body = parse_request(client=client)
+
             response = b"HTTP/1.1 200 OK\r\nContent-Length:18\r\nContent-Type: text/plain\r\n\r\nReading successful"
             client.sendall(response)
         except ConnectionError as e: # if client disconnects before sending all the headers
