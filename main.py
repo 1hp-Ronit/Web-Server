@@ -137,7 +137,7 @@ try:
         client, address = server.accept()
         try:
             method, path, headers, body = parse_request(client=client)
-            print(f"Method: {method}, Path: {path}")
+            # print(f"Method: {method}, Path: {path}")
 
             response = handle_request(method, path, headers, body)
             client.sendall(response)

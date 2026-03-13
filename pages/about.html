@@ -1,13 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About Page</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: #f9f9f9; color: #111; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { background: white; border: 1px solid #e5e5e5; border-radius: 12px; padding: 2rem; max-width: 480px; width: 90%; }
+    .label { font-size: 11px; color: #999; font-family: monospace; margin-bottom: 1rem; }
+    h1 { font-size: 24px; font-weight: 500; margin-bottom: 0.5rem; }
+    p { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 1rem; }
+    .box { background: #f5f5f5; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    .box-title { font-size: 13px; font-weight: 500; color: #111; margin-bottom: 0.4rem; }
+    .box-body { font-size: 13px; color: #666; line-height: 1.6; }
+    .divider { border-top: 1px solid #eee; padding-top: 1rem; }
+    a { font-size: 13px; color: #185fa5; text-decoration: none; }
+  </style>
 </head>
 <body>
-    <h1>
-        About Page
-    </h1>
+  <div class="card">
+    <p class="label">localhost:8080/about</p>
+    <h1>About This Project</h1>
+    <p>I kept using HTTP libraries without understanding what was happening underneath. So I went all the way down and built a web server from scratch.</p>
+    <div class="box">
+      <p class="box-title">What it does</p>
+      <p class="box-body">Accepts TCP connections · Parses raw HTTP requests · Routes by method and path · Serves static files · Returns correct status codes</p>
+    </div>
+    <div class="divider">
+      <a href="/">← Back to home</a>
+    </div>
+  </div>
 </body>
 </html>
