@@ -43,6 +43,46 @@ def read_request(client : socket.socket) -> tuple[str, bytes]:
             break
         body_so_far += chunk
     return headers_raw, body_so_far[:content_length]
+
+
+# Build response
+def build_response(
+    status_code: int,
+    body: str | bytes,
+    content_type: str = 'text/html; charset=utf-8') -> bytes:
+    
+    if isinstance(body, str):
+        body_bytes = body.encode('utf-8')
+    else:
+        body_bytes = body
+        
+    status_phrases = {
+        200: 'OK',
+        201: 'Created',
+        204: 'No Content',
+        301: 'Moved Permanently',
+        302: 'Found',
+        400: 'Bad Request',
+        401: 'Unauthorized',
+        403: 'Forbidden',
+        404: 'Not Found',
+        405: 'Method Not Allowed',
+        500: 'Internal Server Error',
+    }
+    
+    phrase = status_phrases.get(status_code, 'Unknown')
+    
+    # Creating the headers
+    headers = (
+        f"HTTP/1.1 {status_code} {phrase}\r\n"
+        f"Content-Type: {content_type}\r\n"
+        f"Content-Length: {len(body_bytes)}\r\n"
+        f"Connection: close\r\n"
+        f"\r\n"
+    )
+    return headers.encode('utf-8') + body_bytes
+
+
 try:
     while True:
         client, address = server.accept()
