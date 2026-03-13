@@ -49,7 +49,8 @@ def read_request(client : socket.socket) -> tuple[str, bytes]:
 def build_response(
     status_code: int,
     body: str | bytes,
-    content_type: str = 'text/html; charset=utf-8') -> bytes:
+    content_type: str = 'text/html; charset=utf-8',
+    extra_headers: dict[str,str] | None = None) -> bytes:
     
     if isinstance(body, str):
         body_bytes = body.encode('utf-8')
@@ -78,9 +79,18 @@ def build_response(
         f"Content-Type: {content_type}\r\n"
         f"Content-Length: {len(body_bytes)}\r\n"
         f"Connection: close\r\n"
-        f"\r\n"
     )
+    if extra_headers: 
+        for key, value in extra_headers.items():
+            headers += f"{key}: {value}\r\n"
+    headers += "\r\n"
     return headers.encode('utf-8') + body_bytes
+
+def read_file(path: str) -> bytes:
+        with open(path, 'rb') as f:
+            data = f.read()
+            return data
+   
 
 def parse_request(client : socket.socket) -> tuple[str, str, str, bytes]:
     """returns method, path, headers, body"""
@@ -88,20 +98,48 @@ def parse_request(client : socket.socket) -> tuple[str, str, str, bytes]:
     status_line = headers.split('\r\n',1)[0]
     try: 
         method, path, version = status_line.split(' ')
+        return method, path, headers, body
     except ValueError:
-        raise ValueError(f"Malformed Request Line: {status_line}")
+        raise ValueError(f"Malformed Request Line: {status_line}")   
     
-    
-
-
+def handle_request(method: str, path: str, headers: str, body: bytes) -> bytes:
+    if path == '/':
+        if method == 'GET':
+            try:
+                response_body = read_file('pages/index.html')
+                response = build_response(status_code=200, body=response_body)
+                return response
+            except FileNotFoundError:
+                response_body = read_file('pages/404.html')
+                response = build_response(status_code=404, body=response_body)
+                return response
+        else:
+            return build_response(405, '', extra_headers = {'Allow': 'GET'})
+    elif path == '/about':
+        if method == 'GET':
+            try: 
+                response_body = read_file('pages/about.html')
+                response = build_response(status_code=200, body=response_body)
+                return response
+            except FileNotFoundError:
+                response_body = read_file('pages/404.html')
+                response = build_response(status_code=404, body=response_body)
+                return response
+        else:
+              return build_response(405, '', extra_headers = {'Allow': 'GET'})
+    else:
+        response_body = read_file('pages/404.html')
+        response = build_response(status_code=404, body=response_body)
+        return response
 
 try:
     while True:
         client, address = server.accept()
         try:
             method, path, headers, body = parse_request(client=client)
+            print(f"Method: {method}, Path: {path}")
 
-            response = b"HTTP/1.1 200 OK\r\nContent-Length:18\r\nContent-Type: text/plain\r\n\r\nReading successful"
+            response = handle_request(method, path, headers, body)
             client.sendall(response)
         except ConnectionError as e: # if client disconnects before sending all the headers
             print(f"Connection error {e}")
@@ -109,6 +147,8 @@ try:
             print("Client disconnected mid-respone")
         except ConnectionResetError:
             print(f"Client {address} reset the connection")
+        except Exception as e:
+            print(f"Exception: {e}")
         
         finally:
             client.close()
