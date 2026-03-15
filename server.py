@@ -2,6 +2,7 @@ import socket
 import mime_types
 import os
 from urllib.parse import unquote
+import threading
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -142,26 +143,32 @@ def handle_request(method: str, path: str, headers: str, body: bytes) -> bytes:
     else:
         build_response(405, '')
 
+def handle_client(client: socket.socket, address: tuple) -> None:
+    try:
+        method, path, headers, body = parse_request(client=client)
+            # print(f"Method: {method}, Path: {path}")
+
+        response = handle_request(method, path, headers, body)
+        client.sendall(response)
+    except ConnectionError as e: # if client disconnects before sending all the headers
+        print(f"Connection error {e}")
+    except BrokenPipeError:
+        print("Client disconnected mid-respone")
+    except ConnectionResetError:
+        print(f"Client {address} reset the connection")
+    except Exception as e:
+        print(f"Exception: {e}")
+        
+    finally:
+            client.close()
+
 try:
     while True:
         client, address = server.accept()
-        try:
-            method, path, headers, body = parse_request(client=client)
-            # print(f"Method: {method}, Path: {path}")
-
-            response = handle_request(method, path, headers, body)
-            client.sendall(response)
-        except ConnectionError as e: # if client disconnects before sending all the headers
-            print(f"Connection error {e}")
-        except BrokenPipeError:
-            print("Client disconnected mid-respone")
-        except ConnectionResetError:
-            print(f"Client {address} reset the connection")
-        except Exception as e:
-            print(f"Exception: {e}")
-        
-        finally:
-            client.close()
+        print(f"Connection from {address}")
+        thread = threading.Thread(target = handle_client, args=(client, address))
+        thread.daemon = True
+        thread.start()
 except KeyboardInterrupt:
     print("Closing the Server...")
 finally:
