@@ -1,4 +1,8 @@
 import socket
+import mime_types
+import os
+from urllib.parse import unquote
+
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
@@ -100,37 +104,43 @@ def parse_request(client : socket.socket) -> tuple[str, str, str, bytes]:
         method, path, version = status_line.split(' ')
         return method, path, headers, body
     except ValueError:
-        raise ValueError(f"Malformed Request Line: {status_line}")   
+        raise ValueError(f"Malformed Request Line: {status_line}")  
+    
+def serve_static(path : str) -> bytes:
+    path = unquote(path)
+    if path == '/':
+        path = '/index.html'  
+    
+    _, ext = os.path.splitext(path)
+    if not ext:
+        path = path+'.html'  
+    pages_dir = os.path.realpath('pages')
+    file_path = os.path.realpath(os.path.join('pages', path.lstrip('/')))
+    if not file_path.startswith(pages_dir + os.sep):
+        return build_response(status_code= 403, body='<h1>Forbidden</h1>') 
+    
+    try:
+        response_body = read_file(file_path)
+    except FileNotFoundError:
+        try:
+            response_body = read_file('pages/404.html')
+            response = build_response(status_code=404, body=response_body)   
+            return response
+        except FileNotFoundError:
+            return build_response(404, '<h1> Not Found </h1>')
+            
+    content_type = mime_types.get_content_type(file_path)
+    
+    return build_response(200, response_body, content_type)
+
+    
     
 def handle_request(method: str, path: str, headers: str, body: bytes) -> bytes:
-    if path == '/':
-        if method == 'GET':
-            try:
-                response_body = read_file('pages/index.html')
-                response = build_response(status_code=200, body=response_body)
-                return response
-            except FileNotFoundError:
-                response_body = read_file('pages/404.html')
-                response = build_response(status_code=404, body=response_body)
-                return response
-        else:
-            return build_response(405, '', extra_headers = {'Allow': 'GET'})
-    elif path == '/about':
-        if method == 'GET':
-            try: 
-                response_body = read_file('pages/about.html')
-                response = build_response(status_code=200, body=response_body)
-                return response
-            except FileNotFoundError:
-                response_body = read_file('pages/404.html')
-                response = build_response(status_code=404, body=response_body)
-                return response
-        else:
-              return build_response(405, '', extra_headers = {'Allow': 'GET'})
+    """Owns the method Check"""
+    if method == 'GET':
+        return serve_static(path)
     else:
-        response_body = read_file('pages/404.html')
-        response = build_response(status_code=404, body=response_body)
-        return response
+        build_response(405, '')
 
 try:
     while True:
