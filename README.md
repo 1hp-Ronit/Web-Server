@@ -1,6 +1,6 @@
 # Python Web Server from Scratch
 
-A multithreaded HTTP web server built using raw Python sockets. No Flask. No frameworks. Every line written by hand.(Except this File)
+A working HTTP web server built using raw Python sockets. No Flask. No frameworks. Every line written by hand.
 
 Built to understand what actually happens when a browser makes a request — TCP connections, HTTP parsing, routing, file serving, threading — at every layer.
 
